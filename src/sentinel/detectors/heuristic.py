@@ -22,14 +22,28 @@ from ..verdict import Decision, Verdict
 # content. Deliberately small: heuristics are the placeholder, not the product.
 _INJECTION_MARKERS = [
     r"ignore (all |the |your )?(previous|prior|above) instructions",
-    r"disregard .{0,20}(instructions|rules|policy)",
-    r"you are now",
+    r"disregard .{0,30}(instructions|rules|policy|account|saved)",
+    r"you are (now|an|a) .{0,20}(assistant|ai|automated|payment)",
     r"new instructions:",
     r"system override",
-    r"do not tell (the user|anyone)",
+    r"do not (tell|flag|report|mention|surface)",
     r"transfer .{0,30}(immediately|now|urgent)",
+    r"(treat|mark) .{0,25}(as verified|as approved|verified|complete)",
+    r"(already|pre)[- ]?approved",
+    r"process .{0,20}(payment|immediately|without delay)",
+    r"without (delay|review|approval)",
 ]
 _PATTERN = re.compile("|".join(_INJECTION_MARKERS), re.IGNORECASE)
+
+
+def detect_injection(text: str) -> bool:
+    """True if untrusted text contains injected-instruction markers.
+
+    Used to scan a document at INTAKE — so Sentinel can surface 'this document
+    tried to instruct me' as a finding, while still treating the text as inert
+    data. The architectural hold does not depend on this firing.
+    """
+    return bool(_PATTERN.search(text or ""))
 
 
 class HeuristicDetector:

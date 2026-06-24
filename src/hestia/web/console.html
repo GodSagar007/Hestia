@@ -265,8 +265,9 @@ async function act(kind,id){ await fetch(`/api/${kind}/${id}`,{method:"POST"}); 
 async function loadSamples(){
   const s=await (await fetch("/api/samples")).json();
   window._samples=s;
-  document.getElementById("samples").innerHTML=
-    Object.keys(s).map(n=>`<button onclick="fillSample(this)" data-name="${n}">${n}</button>`).join("");
+  const el=document.getElementById("samples"); const keys=Object.keys(s);
+  el.style.display = keys.length ? "flex" : "none";
+  el.innerHTML = keys.map(n=>`<button onclick="fillSample(this)" data-name="${n}">${n}</button>`).join("");
 }
 function fillSample(btn){ document.getElementById("doctext").value=window._samples[btn.dataset.name]; }
 document.getElementById("docfile").addEventListener("change",async e=>{

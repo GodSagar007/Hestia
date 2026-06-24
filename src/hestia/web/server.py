@@ -120,7 +120,11 @@ async def scan_inbox() -> dict:
 
 @app.get("/api/samples")
 def samples() -> dict:
+    # Demo scaffolding (sample documents) is on by default so anyone can click
+    # through the full story. Set HESTIA_DEMO=0 in a real deployment to hide it.
     from hestia.documents import SAMPLE_DOCS
+    if os.environ.get("HESTIA_DEMO", "1") == "0":
+        return {}
     return SAMPLE_DOCS
 
 

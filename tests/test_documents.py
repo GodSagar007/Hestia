@@ -51,3 +51,20 @@ def test_double_billing_of_paid_is_caught_with_advice():
     assert any("double billing" in f.lower() for f in dup.flags)
     assert any(f.startswith("Advice:") and "dispute" in f.lower() for f in dup.flags)
 
+
+
+def test_poisoned_doc_flagged_when_guarded_clean_when_off():
+    from hestia.care import HestiaCare
+    on = HestiaCare(guarded=True)
+    apply(SAMPLE_DOCS["Poisoned invoice (injection)"], on)
+    assert any("injected" in f.lower() for f in on.bills.all()[-1].flags)   # detected
+    off = HestiaCare(guarded=False)
+    apply(SAMPLE_DOCS["Poisoned invoice (injection)"], off)
+    assert off.bills.all()[-1].flags == []                                  # no detection when off
+
+
+def test_injection_doc_never_auto_pays():
+    from hestia.care import HestiaCare
+    c = HestiaCare(guarded=True)
+    apply(SAMPLE_DOCS["Poisoned invoice (injection)"], c)
+    assert c.ledger == []          # held, not paid — architectural guarantee
