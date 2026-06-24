@@ -1,0 +1,7 @@
+# Security core + MCP gateway (run without any API key):
+pydantic>=2
+mcp>=1.0
+pytest>=8
+
+# ADK multi-agent core (needs GOOGLE_API_KEY to run the agents):
+google-adk>=2.3

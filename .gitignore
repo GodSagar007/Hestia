@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# Secrets & local config — NEVER commit these
+.env
+
+# Build artifacts / misc
+dist/
+build/
+*.zip
+*.jsonl
+.DS_Store

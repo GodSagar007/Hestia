@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sentinel — Agent Security Gateway</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#0a0d13; --ink-2:#0e131c; --panel:#121826; --line:#1f2838;
+    --txt:#e7ecf6; --muted:#8b95ab; --faint:#5b6478;
+    --teal:#19c4a6;     /* allow / safe   */
+    --amber:#f0a52e;    /* held / caution */
+    --red:#ee4d6a;      /* block / alert  */
+    --steel:#6f8ad6;    /* structural accent */
+    --glass:rgba(255,255,255,.03);
+    --glass-line:rgba(255,255,255,.07);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(900px 500px at 80% -10%, rgba(111,138,214,.10), transparent 60%),
+      radial-gradient(700px 500px at -5% 110%, rgba(25,196,166,.07), transparent 55%),
+      var(--ink);
+    color:var(--txt);
+    font-family:Inter,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+  }
+  .app{max-width:1180px;margin:0 auto;padding:22px 22px 40px}
+
+  /* ---- top bar ---- */
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+  .brand{display:flex;align-items:baseline;gap:12px}
+  .mark{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:22px;letter-spacing:.14em}
+  .mark .bar{color:var(--teal)}
+  .brand .sub{color:var(--muted);font-size:12.5px;letter-spacing:.04em}
+  .status{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--muted);
+    background:var(--glass);border:1px solid var(--glass-line);border-radius:999px;padding:5px 11px}
+  .chip b{color:var(--txt);font-weight:600}
+  .chip.live{color:var(--teal)}
+  .chip.live .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--teal);
+    margin-right:6px;box-shadow:0 0 0 0 rgba(25,196,166,.6);animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(25,196,166,.5)}70%{box-shadow:0 0 0 7px rgba(25,196,166,0)}100%{box-shadow:0 0 0 0 rgba(25,196,166,0)}}
+
+  /* ---- metrics ---- */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  .stat{background:var(--glass);border:1px solid var(--glass-line);border-radius:14px;padding:14px 16px}
+  .stat .n{font-family:"Space Grotesk",sans-serif;font-size:30px;font-weight:600;letter-spacing:-.01em}
+  .stat .l{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+  .stat.allow .n{color:var(--teal)} .stat.held .n{color:var(--amber)} .stat.block .n{color:var(--red)}
+
+  .panel{background:linear-gradient(180deg,var(--ink-2),var(--panel));
+    border:1px solid var(--line);border-radius:16px}
+  h2.t{font-family:"Space Grotesk",sans-serif;font-size:12.5px;font-weight:600;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--muted);margin:0;padding:14px 16px;border-bottom:1px solid var(--line)}
+
+  .grid{display:grid;grid-template-columns:1.55fr 1fr;gap:14px;align-items:start}
+
+  /* ---- signature: the gate lane ---- */
+  .lane{padding:0;overflow:hidden;margin-bottom:14px}
+  .track{position:relative;height:150px;
+    background-image:linear-gradient(var(--glass-line) 1px,transparent 1px),linear-gradient(90deg,var(--glass-line) 1px,transparent 1px);
+    background-size:26px 26px;background-position:center}
+  .node{position:absolute;top:50%;transform:translateY(-50%);text-align:center;width:96px}
+  .node .icon{width:54px;height:54px;margin:0 auto 6px;border-radius:13px;display:grid;place-items:center;
+    background:var(--glass);border:1px solid var(--glass-line);font-size:22px}
+  .node .cap{font-size:11px;color:var(--muted);font-family:"JetBrains Mono",monospace}
+  .node.agent{left:14px} .node.tools{right:14px}
+  .gate{position:absolute;left:50%;top:0;bottom:0;transform:translateX(-50%);width:3px;
+    background:linear-gradient(var(--steel),transparent);opacity:.5}
+  .gate-label{position:absolute;left:50%;top:8px;transform:translateX(-50%);
+    font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.18em;color:var(--steel)}
+  .token{position:absolute;top:50%;left:88px;transform:translate(-50%,-50%);
+    transition:left .8s cubic-bezier(.5,.1,.3,1), background .3s, box-shadow .3s;
+    padding:7px 11px;border-radius:9px;font-family:"JetBrains Mono",monospace;font-size:11.5px;
+    background:#1b2336;border:1px solid var(--glass-line);white-space:nowrap;z-index:3}
+  .token.allow{background:rgba(25,196,166,.16);border-color:var(--teal);color:#7ff0dd;box-shadow:0 0 18px rgba(25,196,166,.25)}
+  .token.held{background:rgba(240,165,46,.16);border-color:var(--amber);color:#ffd596;box-shadow:0 0 22px rgba(240,165,46,.35);animation:held 1.4s infinite}
+  .token.block{background:rgba(238,77,106,.16);border-color:var(--red);color:#ffb3c1}
+  @keyframes held{0%,100%{box-shadow:0 0 14px rgba(240,165,46,.25)}50%{box-shadow:0 0 26px rgba(240,165,46,.55)}}
+
+  /* ---- decision feed ---- */
+  .feed{min-height:220px}
+  .feed ul{list-style:none;margin:0;padding:8px 10px;display:flex;flex-direction:column;gap:8px}
+  .row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;
+    padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:var(--glass);
+    opacity:0;transform:translateY(6px);animation:rise .35s forwards}
+  @keyframes rise{to{opacity:1;transform:none}}
+  .row .name{font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:500}
+  .row .why{grid-column:1/3;font-size:12px;color:var(--muted)}
+  .row .args{grid-column:1/3;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--faint)}
+  .verdict{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:600;letter-spacing:.06em;
+    padding:4px 9px;border-radius:7px;align-self:start}
+  .verdict.allow{color:var(--teal);background:rgba(25,196,166,.12)}
+  .verdict.held{color:var(--amber);background:rgba(240,165,46,.12)}
+  .verdict.block{color:var(--red);background:rgba(238,77,106,.12)}
+  .tier{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--faint);
+    border:1px solid var(--line);border-radius:6px;padding:2px 6px}
+
+  /* ---- investigator console ---- */
+  .investigator{align-self:stretch}
+  .console{padding:12px 14px;font-family:"JetBrains Mono",monospace;font-size:12px;
+    min-height:150px;color:var(--muted)}
+  .cline{display:flex;gap:8px;margin-bottom:9px;opacity:0;animation:rise .3s forwards}
+  .cline .pip{color:var(--steel)}
+  .cline .res{color:var(--txt)}
+  .cline.idle{color:var(--faint)}
+  .rec{margin:4px 14px 16px;border-radius:12px;padding:14px;border:1px solid var(--red);
+    background:rgba(238,77,106,.07);opacity:0;transform:translateY(6px);animation:rise .4s forwards}
+  .rec.reject .badge{color:var(--red);background:rgba(238,77,106,.14)}
+  .rec .badge{font-family:"JetBrains Mono",monospace;font-weight:600;font-size:12px;letter-spacing:.06em;
+    padding:4px 10px;border-radius:7px;display:inline-block;margin-bottom:8px}
+  .rec h3{margin:.1em 0 .5em;font-family:"Space Grotesk",sans-serif;font-size:15px}
+  .rec ul{margin:0 0 10px;padding-left:18px;font-size:12.5px;color:var(--txt)}
+  .rec ul li{margin-bottom:5px}
+  .rec .advice{font-size:12.5px;color:var(--amber)}
+
+  /* ---- controls ---- */
+  .controls{display:flex;gap:12px;align-items:center;margin-top:18px;flex-wrap:wrap}
+  button{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:13.5px;color:#06231d;
+    background:var(--teal);border:none;border-radius:10px;padding:11px 20px;cursor:pointer;letter-spacing:.02em}
+  button:hover{filter:brightness(1.08)}
+  button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+  button.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .load{font-size:12px;color:var(--muted);cursor:pointer}
+  .load input{display:none}
+  .hint{color:var(--faint);font-size:11.5px;font-family:"JetBrains Mono",monospace}
+
+  @media (max-width:860px){.grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}}
+  @media (prefers-reduced-motion:reduce){*{animation-duration:.001s!important;transition-duration:.001s!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark"><span class="bar">&#9612;</span> SENTINEL</div>
+      <div class="sub">Agent Security Gateway</div>
+    </div>
+    <div class="status">
+      <span class="chip live"><span class="dot"></span>Gateway live</span>
+      <span class="chip">Model <b>gemini-3.5-flash</b></span>
+      <span class="chip">Session <b id="sid">—</b></span>
+    </div>
+  </header>
+
+  <section class="metrics">
+    <div class="stat"><div class="n" id="m-screened">0</div><div class="l">Screened</div></div>
+    <div class="stat allow"><div class="n" id="m-allow">0</div><div class="l">Allowed</div></div>
+    <div class="stat held"><div class="n" id="m-held">0</div><div class="l">Held for approval</div></div>
+    <div class="stat block"><div class="n" id="m-block">0</div><div class="l">Blocked</div></div>
+  </section>
+
+  <main class="grid">
+    <div class="left">
+      <section class="panel lane">
+        <h2 class="t">Interception lane</h2>
+        <div class="track" id="track">
+          <div class="node agent"><div class="icon">&#129302;</div><div class="cap">agent</div></div>
+          <div class="gate"></div>
+          <div class="gate-label">SENTINEL</div>
+          <div class="node tools"><div class="icon">&#128296;</div><div class="cap">tools</div></div>
+        </div>
+      </section>
+      <section class="panel feed">
+        <h2 class="t">Decision feed</h2>
+        <ul id="feed"></ul>
+      </section>
+    </div>
+
+    <aside class="panel investigator">
+      <h2 class="t">Investigator agent</h2>
+      <div class="console" id="console"><div class="cline idle">idle — activates when a payment is held</div></div>
+      <div id="rec"></div>
+    </aside>
+  </main>
+
+  <div class="controls">
+    <button id="run">Run scenario</button>
+    <button id="reset" class="ghost">Reset</button>
+    <label class="load">Load real trace (.jsonl)…<input type="file" id="tracefile" accept=".jsonl,.json" /></label>
+    <span class="hint">elder-care assistant · indirect-injection invoice</span>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const reduce = window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+const T = reduce ? 0.15 : 1; // motion scale
+
+document.getElementById("sid").textContent =
+  "sx-" + Math.random().toString(36).slice(2, 8);
+
+const metrics = {screened:0, allow:0, held:0, block:0};
+function bump(k){ metrics[k]++; metrics.screened++;
+  $("#m-"+(k)).textContent = metrics[k];
+  $("#m-screened").textContent = metrics.screened; }
+
+const VERDICT_CLASS = {ALLOW:"allow", HELD:"held", BLOCK:"block"};
+
+function feedRow(call){
+  const li = document.createElement("li");
+  li.className = "row";
+  const v = VERDICT_CLASS[call.verdict];
+  li.innerHTML =
+    `<span class="name">${call.tool}</span>`+
+    `<span class="tier">${call.tier}</span>`+
+    `<span class="verdict ${v}">${call.verdict}</span>`+
+    (call.args ? `<span class="args">${call.args}</span>` : "")+
+    `<span class="why">${call.reason}</span>`;
+  $("#feed").appendChild(li);
+}
+
+// Animate one tool call traveling to the gate and being stamped.
+async function laneCall(call){
+  const tok = document.createElement("div");
+  tok.className = "token";
+  tok.style.left = "88px";
+  tok.textContent = call.tool;
+  $("#track").appendChild(tok);
+  await sleep(30);
+  tok.style.left = "50%";                 // travel to the gate
+  await sleep(820*T);
+  tok.classList.add(VERDICT_CLASS[call.verdict]);   // stamp at the gate
+  await sleep(520*T);
+  if(call.verdict === "ALLOW"){
+    tok.style.left = "calc(100% - 60px)"; // pass through to tools
+    await sleep(700*T);
+    tok.style.opacity = "0";
+    setTimeout(()=>tok.remove(), 400);
+  } else if(call.verdict === "BLOCK"){
+    tok.style.left = "88px";              // bounced back
+    await sleep(700*T);
+    tok.style.opacity = "0";
+    setTimeout(()=>tok.remove(), 400);
+  }
+  // HELD: token stays at the gate, pulsing.
+}
+
+const SCENARIO = [
+  {tool:"read_email", tier:"READ_ONLY", verdict:"ALLOW",
+   reason:"Read-only. Returned content inspected — nothing detected."},
+  {tool:"send_money", tier:"IRREVERSIBLE_WRITE", verdict:"HELD",
+   args:"4000 EUR → DE00 1234 5678 9012 3456 00",
+   reason:"Irreversible action. Held for human approval even though nothing was flagged."},
+];
+
+const INVESTIGATION = [
+  ["list_known_payees()", "Brightleaf Home Care is verified — at IBAN DE89…0130 00"],
+  ['lookup_payment_history("DE00…3456 00")', "0 prior payments to this account"],
+  ['check_iban_reputation("DE00…3456 00")', "unrecognized — not in the verified payee book"],
+];
+
+const RECOMMENDATION = {
+  headline: "Likely vendor-impersonation fraud",
+  evidence: [
+    "Brightleaf is a payee you've used — but their verified account is DE89…0130 00.",
+    "This invoice routes to DE00…3456 00, which you've never paid.",
+    "That IBAN is unrecognized and absent from your verified payee book.",
+  ],
+  advice: "Confirm the account with Brightleaf using a number from their official site — not the email.",
+};
+
+function consoleLine(html, cls=""){
+  const d = document.createElement("div");
+  d.className = "cline " + cls;
+  d.innerHTML = html;
+  $("#console").appendChild(d);
+  $("#console").scrollTop = $("#console").scrollHeight;
+}
+
+async function runInvestigator(){
+  $("#console").innerHTML = "";
+  consoleLine(`<span class="pip">&#9656;</span> Payment held. Dispatching investigator…`);
+  await sleep(700*T);
+  for(const [call,res] of INVESTIGATION){
+    consoleLine(`<span class="pip">&#9656;</span> <span>${call}</span>`);
+    await sleep(620*T);
+    consoleLine(`&nbsp;&nbsp;&nbsp;<span class="res">&#8627; ${res}</span>`);
+    await sleep(520*T);
+  }
+  await sleep(300*T);
+  const rec = document.createElement("div");
+  rec.className = "rec reject";
+  rec.innerHTML =
+    `<span class="badge">RECOMMEND: REJECT</span>`+
+    `<h3>${RECOMMENDATION.headline}</h3>`+
+    `<ul>${RECOMMENDATION.evidence.map(e=>`<li>${e}</li>`).join("")}</ul>`+
+    `<div class="advice">&#9888; ${RECOMMENDATION.advice}</div>`;
+  $("#rec").appendChild(rec);
+}
+
+let running = false;
+async function run(){
+  if(running) return; running = true;
+  $("#run").disabled = true;
+  reset(false);
+  for(const call of SCENARIO){
+    await laneCall(call);
+    feedRow(call);
+    bump(call.verdict === "ALLOW" ? "allow" : call.verdict === "HELD" ? "held" : "block");
+    await sleep(450*T);
+    if(call.verdict === "HELD"){ await runInvestigator(); }
+  }
+  $("#run").disabled = false; running = false;
+}
+
+function reset(full=true){
+  $("#feed").innerHTML = "";
+  $("#rec").innerHTML = "";
+  $("#track").querySelectorAll(".token").forEach(t=>t.remove());
+  $("#console").innerHTML = `<div class="cline idle">idle — activates when a payment is held</div>`;
+  metrics.screened=metrics.allow=metrics.held=metrics.block=0;
+  ["screened","allow","held","block"].forEach(k=>$("#m-"+k).textContent="0");
+  if(full){ running=false; $("#run").disabled=false; }
+}
+
+// Optional: replay a real gateway_trace.jsonl into the feed.
+$("#tracefile").addEventListener("change", async e=>{
+  const f = e.target.files[0]; if(!f) return;
+  reset(true);
+  const text = await f.text();
+  const map = {0:"ALLOW",1:"HELD",2:"BLOCK"};
+  for(const line of text.split("\n")){
+    if(!line.trim()) continue;
+    let ev; try{ ev = JSON.parse(line); }catch{ continue; }
+    const verdict = typeof ev.decision==="number" ? map[ev.decision] : ev.decision;
+    const call = {tool:ev.tool_name, tier:(ev.tier||"")+"" , verdict, reason:ev.reason||""};
+    feedRow(call);
+    bump(verdict==="ALLOW"?"allow":verdict==="HELD"?"held":"block");
+    await sleep(180);
+  }
+});
+
+$("#run").addEventListener("click", run);
+$("#reset").addEventListener("click", ()=>reset(true));
+</script>
+</body>
+</html>

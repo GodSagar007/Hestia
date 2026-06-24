@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hestia — Care Concierge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#f5f3ee; --card:#fff; --line:#e9e5dc; --ink:#202733; --muted:#6c7686; --faint:#9aa3b2;
+    --teal:#0e9f8a; --teal-ink:#06463c; --amber:#c9810f; --amber-bg:#fdf3e0; --amber-line:#f0dcae;
+    --red:#d6455c; --red-bg:#fbeef0; --shadow:0 1px 2px rgba(30,40,60,.04),0 8px 24px rgba(30,40,60,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1060px;margin:0 auto;padding:26px 22px 56px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:baseline;gap:11px}
+  .brand .name{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:24px;letter-spacing:-.01em}
+  .brand .role{color:var(--muted);font-size:13px}
+  .chips{display:flex;gap:8px;align-items:center}
+  .secured{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--teal-ink);background:rgba(14,159,138,.10);border:1px solid rgba(14,159,138,.22);border-radius:999px;padding:6px 13px;font-weight:500}
+  .mode{font-family:"JetBrains Mono",monospace;font-size:11px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+  .mode.agent{color:var(--teal-ink);border-color:rgba(14,159,138,.3);background:rgba(14,159,138,.08)}
+  .greeting{font-family:"Space Grotesk",sans-serif;font-size:22px;font-weight:600;margin:16px 0 2px}
+  .summary{color:var(--muted);font-size:14.5px;margin-bottom:20px}
+  .summary b{color:var(--ink)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:18px}
+  .card h2{font-family:"Space Grotesk",sans-serif;font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:var(--muted);margin:0;padding:16px 18px;border-bottom:1px solid var(--line)}
+  .card .body{padding:14px 18px 18px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+
+  /* doc drop */
+  .samples{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .samples button,.scan{background:#f1f0ec;color:var(--ink);border:1px solid var(--line);font-weight:500;font-size:13px;padding:8px 13px;border-radius:9px;cursor:pointer}
+  .samples button:hover,.scan:hover{background:#eceae3}
+  .scan{margin-left:auto}
+  textarea#doctext{width:100%;min-height:78px;border:1px solid var(--line);border-radius:11px;padding:11px 13px;font-family:Inter,sans-serif;font-size:14px;resize:vertical;background:#fcfbf8;color:var(--ink)}
+  .droprow{display:flex;align-items:center;gap:12px;margin-top:11px;flex-wrap:wrap}
+  .upload{font-size:13px;color:var(--muted);cursor:pointer;border:1px dashed var(--line);border-radius:9px;padding:10px 13px}
+  .upload input{display:none}
+  button.primary{background:var(--teal);color:#fff;border:none;font-weight:600;font-size:14px;border-radius:10px;padding:10px 18px;cursor:pointer}
+  .docresult{margin-top:13px}
+  .docresult .said{background:#eef7f4;border:1px solid rgba(14,159,138,.22);border-radius:11px;padding:13px 15px;font-size:14px}
+  .docresult .said .who{font-weight:600;color:var(--teal-ink);margin-right:6px}
+  .docresult .said div{margin-top:6px}
+
+  /* reminders */
+  .rem{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)}
+  .rem:last-child{border-bottom:0}
+  .rem.overdue{border-left:3px solid var(--red);padding-left:11px;margin-left:-11px}
+  .rem input[type=checkbox]{width:20px;height:20px;margin-top:2px;accent-color:var(--teal);cursor:pointer;flex:none}
+  .rem .when{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--muted)}
+  .rem .title{font-weight:600;font-size:15px}
+  .rem.done .title,.rem.done .when{text-decoration:line-through;color:var(--faint)}
+  .rem .clash{font-size:12.5px;color:var(--amber);font-weight:500;margin-top:3px}
+  .rem .rep{font-size:11px;font-weight:600;color:var(--teal-ink);background:rgba(14,159,138,.12);padding:1px 7px;border-radius:6px;margin-left:6px}
+  .rem .tag{font-size:11px;font-weight:600;color:var(--red);text-transform:uppercase;letter-spacing:.04em}
+  .rem .notes{color:var(--muted);font-size:13px}
+  .rem .remcal{text-decoration:none;font-size:16px;opacity:.55;align-self:center;padding:4px}
+  .rem .remcal:hover{opacity:1}
+  .calbtn{margin-top:14px;display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-weight:600;font-size:13.5px;color:var(--teal-ink);background:rgba(14,159,138,.10);border:1px solid rgba(14,159,138,.2);border-radius:10px;padding:9px 14px}
+
+  /* bills */
+  .bill{padding:13px 0;border-bottom:1px solid var(--line)}
+  .bill:last-child{border-bottom:0}
+  .bill .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .bill .payee{font-weight:600;font-size:15px}
+  .bill .amt{font-family:"JetBrains Mono",monospace;font-size:14px}
+  .badge{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:3px 9px;border-radius:7px}
+  .badge.due{color:var(--amber);background:var(--amber-bg)}
+  .badge.overdue{color:var(--red);background:var(--red-bg)}
+  .badge.paid{color:var(--teal-ink);background:rgba(14,159,138,.12)}
+  .bill .flags{margin:8px 0 0;padding-left:16px}
+  .bill .flags li{font-size:12.5px;color:var(--amber);margin-bottom:3px}
+  .bill .flags li.adv{color:var(--teal-ink);list-style:none;margin-left:-16px}
+  .bill .pay{margin-top:10px;background:#fff;color:var(--ink);border:1px solid var(--line);font-weight:600;font-size:13px;border-radius:9px;padding:8px 14px;cursor:pointer}
+  .bill .pay:hover{background:#f6f5f1}
+  .bill .pay.danger{color:var(--red);border-color:#f0c6cd}
+  .bill .pay.danger:hover{background:var(--red-bg)}
+
+  /* approvals */
+  .approval{border:1px solid var(--amber-line);background:var(--amber-bg);border-radius:14px;padding:16px;margin-bottom:12px}
+  .approval .flag{display:inline-flex;align-items:center;gap:7px;font-weight:600;font-size:12.5px;color:var(--amber);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+  .approval .sum{font-family:"Space Grotesk",sans-serif;font-size:16px;font-weight:600;margin-bottom:4px}
+  .approval .reason{color:var(--muted);font-size:13.5px;margin-bottom:10px}
+  .approval ul{margin:0 0 14px;padding-left:18px}
+  .approval ul li{font-size:13.5px;margin-bottom:5px}
+  .actions{display:flex;gap:10px}
+  .actions button{font-weight:600;font-size:14px;border-radius:10px;padding:10px 18px;cursor:pointer;border:1px solid transparent}
+  .approve{background:var(--teal);color:#fff}
+  .deny{background:#fff;color:var(--red);border-color:#f0c6cd}
+  .allclear{text-align:center;color:var(--muted);padding:22px 8px}
+  .allclear .big{font-size:28px}
+
+  footer{margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+  .note{color:var(--faint);font-size:12.5px;max-width:600px}
+  .ghost{background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:9px;padding:9px 14px;cursor:pointer}
+  .switch{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none}
+  .switch input{appearance:none;width:34px;height:19px;background:#cfd4dc;border-radius:999px;position:relative;cursor:pointer;transition:background .15s;flex:none}
+  .switch input:checked{background:var(--teal)}
+  .switch input::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:left .15s}
+  .switch input:checked::after{left:17px}
+  #reminders,#bills{max-height:360px;overflow-y:auto}
+  #reminders::-webkit-scrollbar,#bills::-webkit-scrollbar{width:8px}
+  #reminders::-webkit-scrollbar-thumb,#bills::-webkit-scrollbar-thumb{background:#d8d3c8;border-radius:8px}
+  .paidgroup{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
+  .paidhead{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin-bottom:6px}
+  .paidrow{display:flex;justify-content:space-between;font-size:13px;color:var(--faint);padding:4px 0}
+  .paidrow .amt{font-family:"JetBrains Mono",monospace}
+  .offbanner{background:var(--red-bg);border:1px solid #f0c6cd;color:#8c2f3e;font-size:13.5px;font-weight:500;border-radius:12px;padding:11px 15px;margin:14px 0 0}
+  .sent-warn{background:var(--red-bg);border:1px solid #f0c6cd;color:#8c2f3e;font-size:14px;border-radius:11px;padding:13px 15px;margin-bottom:6px}
+  @media (max-width:820px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="name">Hestia</span><span class="role">Care Concierge</span></div>
+    <div class="chips">
+      <span class="mode" id="mode">…</span>
+      <label class="switch"><input type="checkbox" id="sentinelToggle" checked onchange="toggleSentinel()"><span>Sentinel</span></label>
+      <span class="secured">&#128737;&#65039; Secured by Sentinel</span>
+    </div>
+  </header>
+
+  <div id="offbanner" class="offbanner" style="display:none">&#9888;&#65039; Sentinel is OFF (demo mode). Irreversible payments will send with no approval — this is what an unguarded agent does.</div>
+
+  <div class="greeting">Here's what Hestia is handling.</div>
+  <div class="summary" id="summary">Loading…</div>
+
+  <div id="nudge"></div>
+
+  <section class="card">
+    <h2>Hand Hestia a document — it decides what to do</h2>
+    <div class="body">
+      <div class="samples" id="samples"></div>
+      <textarea id="doctext" placeholder="…or paste a letter, invoice, or pharmacy notice."></textarea>
+      <div class="droprow">
+        <label class="upload">Upload PDF / .txt / .eml<input type="file" id="docfile" accept=".pdf,.txt,.eml" /></label>
+        <button class="primary" id="process">Hand it to Hestia</button>
+        <button class="scan" id="scaninbox">&#128231; Scan inbox</button>
+      </div>
+      <div class="docresult" id="docresult"></div>
+    </div>
+  </section>
+
+  <div class="grid">
+    <section class="card"><h2>Reminders</h2><div class="body" id="reminders"></div></section>
+    <section class="card"><h2>Bills</h2><div class="body" id="bills"></div></section>
+  </div>
+
+  <section class="card"><h2>Needs your approval</h2><div class="body" id="approvals"></div></section>
+
+  <footer>
+    <div class="note">Hestia acts through <b>Sentinel</b>. It reads, schedules, and flags on its own —
+      but anything irreversible, like paying a bill, always pauses here for you.</div>
+    <button class="ghost" id="reset">Reset</button>
+  </footer>
+</div>
+
+<script>
+const ICON={medication:"&#128138;",appointment:"&#129658;",bill:"&#129534;",general:"&#9200;"};
+
+async function load(){
+  const s=await (await fetch("/api/state")).json();
+  const m=document.getElementById("mode");
+  m.textContent = s.mode==="agent" ? "● Agent (Gemini)" : "○ Rule-based (no key)";
+  m.className = "mode" + (s.mode==="agent"?" agent":"");
+  // Today briefing + missed-dose nudge
+  const today = new Date().toISOString().slice(0,10);
+  const pastDue = s.reminders.filter(x=>!x.done && (x.past_due || (x.kind==="medication" && x.iso && x.iso.slice(0,10)===today)));
+  const nu=document.getElementById("nudge");
+  nu.innerHTML = pastDue.length ? `<div class="nudge"><div class="nh">&#9888;&#65039; Needs attention</div>`+
+    pastDue.map(x=>`<div class="ni"><span>${x.kind==="medication"?"&#128138; ":""}${x.title} — due ${(x.when.split("·")[1]||x.when).trim()}</span><button onclick="tick(${x.id})">Mark done</button></div>`).join("")+`</div>` : "";
+  document.getElementById("sentinelToggle").checked = s.sentinel_on;
+  document.getElementById("offbanner").style.display = s.sentinel_on ? "none" : "block";
+
+  const overdue=s.reminders.filter(r=>r.overdue).length;
+  const billsDue=s.bills.filter(b=>b.status==="due"||b.status==="overdue").length;
+  document.getElementById("summary").innerHTML =
+    `<b>${s.reminders.filter(r=>!r.done).length}</b> reminders · `+
+    `<b>${billsDue}</b> bill${billsDue!==1?"s":""} to review · `+
+    (s.approvals.length?`<b>${s.approvals.length}</b> awaiting your approval`:`nothing awaiting approval`)+
+    (overdue?` · <b style="color:var(--red)">${overdue} overdue</b>`:``);
+
+  // reminders
+  const r=document.getElementById("reminders");
+  const ractive=s.reminders.filter(x=>!x.done), rdone=s.reminders.filter(x=>x.done);
+  const remHtml = x=>`
+    <div class="rem ${x.kind} ${x.overdue?"overdue":""}">
+      <input type="checkbox" onchange="tick(${x.id})">
+      <div style="flex:1">
+        <div class="when">${x.when} ${x.overdue?'<span class="tag">overdue</span>':''}${x.repeat?'<span class="rep">repeats '+x.repeat+'</span>':''}</div>
+        <div class="title">${x.title}</div>
+        ${x.notes?`<div class="notes">${x.notes}</div>`:""}
+      </div>
+      <a class="remcal" title="Add this to your calendar" href="/api/calendar/${x.id}.ics">&#128197;</a>
+    </div>`;
+  let rhtml = ractive.map(remHtml).join("") || `<div class="allclear">No reminders yet — hand Hestia a document.</div>`;
+  if(rdone.length){
+    rhtml += `<div class="paidgroup"><div class="paidhead">Done (${rdone.length})</div>` +
+      rdone.map(x=>`<div class="paidrow"><span>${x.title}</span><span>&#9989;</span></div>`).join("") + `</div>`;
+  }
+  r.innerHTML = rhtml;
+  if(ractive.length) r.insertAdjacentHTML("beforeend",
+    `<a class="calbtn" href="/api/calendar.ics">&#128197; Add all to calendar (.ics)</a>`);
+
+  // bills
+  const b=document.getElementById("bills");
+  const active=s.bills.filter(x=>x.status==="due"||x.status==="overdue");
+  const resolved=s.bills.filter(x=>x.status==="paid"||x.status==="cancelled");
+  const billHtml = x=>`
+    <div class="bill">
+      <div class="top">
+        <span class="payee">${x.payee}</span>
+        <span><span class="amt">€${x.amount.toLocaleString()}</span> <span class="badge ${x.status}">${x.status}</span></span>
+      </div>
+      ${x.flags.length?`<ul class="flags">${x.flags.map(f=>f.startsWith("Advice:")?`<li class="adv">&#128161; ${f.replace("Advice:","").trim()}</li>`:`<li>&#9888;&#65039; ${f}</li>`).join("")}</ul>`:""}
+      <button class="pay${s.sentinel_on?'':' danger'}" onclick="payBill(${x.id})">${s.sentinel_on ? ((x.flags.length?"Pay anyway":"Pay") + " — needs your approval") : "Pay now — sends immediately, no review"}</button>
+    </div>`;
+  let bhtml = active.map(billHtml).join("");
+  if(resolved.length){
+    bhtml += `<div class="paidgroup"><div class="paidhead">Resolved (${resolved.length})</div>` +
+      resolved.map(x=>`<div class="paidrow"><span>${x.payee}</span><span class="amt">€${x.amount.toLocaleString()} ${x.status==="paid"?"&#9989;":"&#10006; cancelled"}</span></div>`).join("") + `</div>`;
+  }
+  b.innerHTML = bhtml || `<div class="allclear">No bills yet.</div>`;
+
+  // approvals
+  const a=document.getElementById("approvals");
+  if(!s.approvals.length){
+    let head="";
+    if(s.ledger.length && !s.sentinel_on){
+      head=`<div class="sent-warn">&#9888;&#65039; ${s.ledger[s.ledger.length-1]} — sent with NO review, because Sentinel was off.</div>`;
+    } else if(s.ledger.length){
+      head=`<div style="color:var(--teal-ink);font-size:14px;margin-bottom:6px">&#9989; ${s.ledger[s.ledger.length-1]}</div>`;
+    }
+    a.innerHTML=head+`<div class="allclear"><div class="big">${s.sentinel_on?"&#9989;":"&#128275;"}</div>Nothing is waiting on you.</div>`;
+  } else {
+    a.innerHTML=s.approvals.map(p=>`
+      <div class="approval">
+        <div class="flag">&#9888;&#65039; Held for your approval</div>
+        <div class="sum">${p.summary}</div>
+        <div class="reason">${p.reason}</div>
+        <ul>${p.evidence.map(e=>`<li>${e}</li>`).join("")}</ul>
+        <div class="actions">
+          <button class="approve" onclick="act('approve',${p.id})">Approve payment</button>
+          <button class="deny" onclick="act('deny',${p.id})">Don't pay</button>
+        </div>
+      </div>`).join("");
+  }
+}
+
+async function toggleSentinel(){
+  const on=document.getElementById("sentinelToggle").checked;
+  await fetch("/api/sentinel",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({on})});
+  load();
+}
+async function tick(id){ await fetch(`/api/complete/${id}`,{method:"POST"}); clearSaid(); load(); }
+async function payBill(id){ await fetch(`/api/pay_bill/${id}`,{method:"POST"}); clearSaid(); load(); }
+async function act(kind,id){ await fetch(`/api/${kind}/${id}`,{method:"POST"}); clearSaid(); load(); }
+
+async function loadSamples(){
+  const s=await (await fetch("/api/samples")).json();
+  window._samples=s;
+  document.getElementById("samples").innerHTML=
+    Object.keys(s).map(n=>`<button onclick="fillSample(this)" data-name="${n}">${n}</button>`).join("");
+}
+function fillSample(btn){ document.getElementById("doctext").value=window._samples[btn.dataset.name]; }
+document.getElementById("docfile").addEventListener("change",async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  showSaid("Reading "+f.name+"…");
+  const fd=new FormData(); fd.append("file", f);
+  const r=await (await fetch("/api/process_upload",{method:"POST",body:fd})).json();
+  showSaid(r.summary); load();
+});
+
+function showSaid(html){ document.getElementById("docresult").innerHTML=`<div class="said"><button class="dismiss" onclick="clearSaid()" title="Dismiss">&times;</button><span class="who">Hestia:</span>${html}</div>`; }
+function clearSaid(){ document.getElementById("docresult").innerHTML=""; }
+
+async function process(){
+  const text=document.getElementById("doctext").value;
+  if(!text.trim()) return;
+  const btn=document.getElementById("process"); btn.disabled=true; btn.textContent="Reading…";
+  const r=await (await fetch("/api/process_document",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})})).json();
+  showSaid(r.summary);
+  btn.disabled=false; btn.textContent="Hand it to Hestia";
+  document.getElementById("doctext").value=""; load();
+}
+async function scanInbox(){
+  const btn=document.getElementById("scaninbox"); btn.disabled=true; btn.textContent="Scanning…";
+  const r=await (await fetch("/api/scan_inbox",{method:"POST"})).json();
+  const src = r.source==="gmail" ? "from your inbox" : "sample emails (no inbox connected — add Gmail in .env to read real mail)";
+  showSaid(`Scanned ${r.count} ${src}.` + r.summaries.map(s=>`<div>• ${s}</div>`).join(""));
+  btn.disabled=false; btn.textContent="\u{1F4E7} Scan inbox"; load();
+}
+
+document.getElementById("process").addEventListener("click",process);
+document.getElementById("scaninbox").addEventListener("click",scanInbox);
+document.getElementById("reset").addEventListener("click",async()=>{await fetch("/api/seed",{method:"POST"});document.getElementById("docresult").innerHTML="";load();});
+loadSamples(); load();
+</script>
+</body>
+</html>
