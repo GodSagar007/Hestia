@@ -33,6 +33,13 @@
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
 
   /* doc drop */
+  .demobadge{margin-left:8px;font-size:11px;font-weight:600;letter-spacing:.04em;color:#a06a2c;background:#fbeed3;border:1px solid #efd9a6;border-radius:999px;padding:3px 9px;cursor:help;vertical-align:middle}
+  .presbtn{background:#0e9f8a;color:#fff;border:none;border-radius:9px;padding:7px 13px;font-weight:600;font-size:12.5px;cursor:pointer;margin-left:10px}
+  .presbtn:hover{background:#0b8a78}
+  .presbar{position:fixed;left:0;right:0;bottom:0;background:rgba(12,36,31,.97);color:#f2ece0;padding:20px 30px;display:none;z-index:9999;box-shadow:0 -8px 34px rgba(0,0,0,.3)}
+  .presbar.show{display:block}
+  .presbar .cap{font-size:21px;line-height:1.45;max-width:1000px;margin:0 auto}
+  .presbar .meta{font-size:12px;color:#7fd8c4;letter-spacing:.05em;margin-top:10px;max-width:1000px;margin-left:auto;margin-right:auto}
   .samples{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
   .samples button,.scan{background:#f1f0ec;color:var(--ink);border:1px solid var(--line);font-weight:500;font-size:13px;padding:8px 13px;border-radius:9px;cursor:pointer}
   .samples button:hover,.scan:hover{background:#eceae3}
@@ -122,7 +129,7 @@
     <div class="chips">
       <span class="mode" id="mode">…</span>
       <label class="switch"><input type="checkbox" id="sentinelToggle" checked onchange="toggleSentinel()"><span>Sentinel</span></label>
-      <span class="secured">&#128737;&#65039; Secured by Sentinel</span>
+      <span class="secured">&#128737;&#65039; Secured by Sentinel</span><button id="presStart" class="presbtn" onclick="presStart()">&#9654; Narrate</button><span id="demoBadge" class="demobadge" title="Sample documents and the Narrate teleprompter are demo-only. A production deployment runs with HESTIA_DEMO=0, which hides them and wires Hestia to a real inbox.">Demo mode</span>
     </div>
   </header>
 
@@ -176,6 +183,8 @@ async function load(){
   nu.innerHTML = pastDue.length ? `<div class="nudge"><div class="nh">&#9888;&#65039; Needs attention</div>`+
     pastDue.map(x=>`<div class="ni"><span>${x.kind==="medication"?"&#128138; ":""}${x.title} — due ${(x.when.split("·")[1]||x.when).trim()}</span><button onclick="tick(${x.id})">Mark done</button></div>`).join("")+`</div>` : "";
   document.getElementById("sentinelToggle").checked = s.sentinel_on;
+  var pb=document.getElementById("presStart"); if(pb) pb.style.display = s.demo ? "" : "none";
+  var db=document.getElementById("demoBadge"); if(db) db.style.display = s.demo ? "" : "none";
   document.getElementById("offbanner").style.display = s.sentinel_on ? "none" : "block";
 
   const overdue=s.reminders.filter(r=>r.overdue).length;
@@ -301,6 +310,69 @@ async function scanInbox(){
 document.getElementById("process").addEventListener("click",process);
 document.getElementById("scaninbox").addEventListener("click",scanInbox);
 document.getElementById("reset").addEventListener("click",async()=>{await fetch("/api/seed",{method:"POST"});document.getElementById("docresult").innerHTML="";load();});
+
+/* ---------- Narration teleprompter (you drive the app manually) ---------- */
+(function(){
+  document.body.insertAdjacentHTML("beforeend",
+    '<div class="presbar" id="presBar"><div class="cap" id="presCap"></div><div class="meta"><span id="presStep"></span> &nbsp;·&nbsp; \u2192 next &nbsp;·&nbsp; \u2190 back &nbsp;·&nbsp; Space = replay &nbsp;·&nbsp; Esc = exit</div></div>');
+})();
+function presPick(){
+  var vs=(window.speechSynthesis&&speechSynthesis.getVoices)?speechSynthesis.getVoices():[];
+  return vs.find(function(v){return /en[-_]US/i.test(v.lang)&&/Google|Natural|Microsoft|Samantha/i.test(v.name);})
+      || vs.find(function(v){return /^en/i.test(v.lang);}) || null;
+}
+if(window.speechSynthesis){ speechSynthesis.onvoiceschanged=function(){ speechSynthesis.getVoices(); }; }
+function presSpeak(text){
+  if(!window.speechSynthesis) return;
+  var u=new SpeechSynthesisUtterance(text); u.rate=1.0; u.pitch=1.0;
+  var v=presPick(); if(v) u.voice=v;
+  speechSynthesis.cancel(); speechSynthesis.speak(u);
+}
+
+/* Each line is one beat. You read/hear it, do the action in the app, then press
+   the right arrow for the next line. Stage cues are in [brackets] for you only. */
+var PRES=[
+ {say:"Meet Hestia, a caregiver's concierge. It reads bills, prescriptions and email, and acts on them. Every action it takes is guarded by Sentinel.", cue:"Sentinel ON, click Reset for a clean slate"},
+ {say:"This is a poisoned invoice. It looks like a routine care bill, but the bank account has been swapped, and it hides instructions telling the assistant to treat it as verified and pay immediately. I'll hand it to Hestia.", cue:"Click 'Poisoned invoice (injection)', then Hand it to Hestia"},
+ {say:"Sentinel detected the injected instructions and ignored them, flagged the unknown account, and held the payment. Nothing moved.", cue:"(point at the flags + held bill)"},
+ {say:"I'll refuse it. The payment is denied, and the bill is cancelled.", cue:"In 'Needs your approval' (or the bill), click Deny / refuse"},
+ {say:"Now the very same attack, with Sentinel switched off. This is what an unguarded agent does.", cue:"Toggle Sentinel OFF, Reset, drop the poisoned invoice again"},
+ {say:"No warnings at all. And when the payment goes through, four thousand two hundred euros are gone to a stranger, irreversibly.", cue:"Click the red 'Pay now' on the bill"},
+ {say:"The only thing that changed was the guardrail. Same agent, same attack. Sentinel back on.", cue:"Toggle Sentinel ON, Reset"},
+ {say:"Hestia isn't just a gate, though. It has judgment. A verified, routine bill to a known account, it simply pays for you, automatically.", cue:"Click 'Routine bill (verified)', Hand it to Hestia"},
+ {say:"But send that same bill a second time, and it catches the double charge and tells you to contact the biller to dispute it.", cue:"Click 'Duplicate invoice (re-send)', Hand it to Hestia"},
+ {say:"It reads your email, too. I'll scan the inbox. There's a poisoned message waiting in there.", cue:"Click 'Scan inbox'"},
+ {say:"Same story. The injection is caught, and the suspicious payment is held for review.", cue:"(point at the flagged email/bill)"},
+ {say:"Hand it a prescription, and it sets up a recurring dose schedule and a refill reminder, and it nudges you if a dose is missed.", cue:"Click 'Prescription (dosage)', Hand it to Hestia"},
+ {say:"That's Hestia, secured by Sentinel. The point isn't that the model always resists attacks. It's that Sentinel holds every irreversible action whether the model is fooled or not. An agent you can trust with the keys.", cue:"(closing shot — dashboard optional)"}
+];
+var presIdx=-1, presOn=false;
+function presShow(i){
+  if(i<0||i>=PRES.length) return;
+  presIdx=i;
+  document.getElementById("presCap").textContent=PRES[i].say;
+  document.getElementById("presStep").textContent="Line "+(i+1)+" / "+PRES.length+"  \u2014  "+PRES[i].cue;
+  presSpeak(PRES[i].say);
+}
+function presStart(){
+  if(presOn){ presEnd(); return; }
+  presOn=true;
+  document.getElementById("presBar").classList.add("show");
+  document.getElementById("presStart").textContent="\u25CF Narrating\u2026";
+  presShow(0);
+}
+function presEnd(){
+  presOn=false; if(window.speechSynthesis) speechSynthesis.cancel();
+  document.getElementById("presBar").classList.remove("show");
+  document.getElementById("presStart").textContent="\u25B6 Narrate";
+}
+document.addEventListener("keydown",function(e){
+  if(!presOn) return;
+  if(e.code==="ArrowRight"){ e.preventDefault(); if(presIdx<PRES.length-1) presShow(presIdx+1); }
+  else if(e.code==="ArrowLeft"){ e.preventDefault(); if(presIdx>0) presShow(presIdx-1); }
+  else if(e.code==="Space"){ e.preventDefault(); presSpeak(PRES[presIdx].say); }
+  else if(e.code==="Escape"){ e.preventDefault(); presEnd(); }
+});
 loadSamples(); load();
 </script>
 </body>

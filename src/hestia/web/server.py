@@ -91,6 +91,7 @@ def state() -> dict:
         "approvals": [p.model_dump() for p in CARE.approvals.pending()],
         "ledger": CARE.ledger,
         "sentinel_on": CARE.guarded,
+        "demo": os.environ.get("HESTIA_DEMO", "1") != "0",
     }
 
 
